@@ -151,7 +151,13 @@ export async function startQuestionTimer(io: Server, roomId: string, questionInd
 }
 
 async function endQuestion(io: Server, roomId: string, questionIndex: number) {
-  const room = await prisma.room.findUnique({ where: { id: roomId }, include: { quiz: { include: { questions: { include: { question: true }, orderBy: { order: 'asc' } } } } } });
+  const room = await prisma.room.findUnique({
+    where: { id: roomId },
+    include: {
+      players: { include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
+      quiz: { include: { questions: { include: { question: true }, orderBy: { order: 'asc' } } } }
+    }
+  });
   if (!room) return;
 
   const quizQuestion = room.quiz.questions[questionIndex];
@@ -205,17 +211,20 @@ async function broadcastLeaderboardUpdate(io: Server, roomId: string) {
   io.to(roomId).emit(SocketEvents.LEADERBOARD_UPDATE, leaderboard);
 }
 
-function startQRRotation(io: Server, roomId: string) {
+async function startQRRotation(io: Server, roomId: string) {
+  const room = await prisma.room.findUnique({ where: { id: roomId } });
+  if (!room) return;
+  const intervalMs = (room.qrRotationInterval || 30) * 1000;
   const rotateQR = async () => {
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
-    if (!room || room.status !== RoomStatus.LIVE) return;
+    const currentRoom = await prisma.room.findUnique({ where: { id: roomId } });
+    if (!currentRoom || currentRoom.status !== RoomStatus.LIVE) return;
     const { v4: uuidv4 } = await import('uuid');
     const newCode = uuidv4();
-    const expiresAt = Date.now() + (room.qrRotationInterval || 30) * 1000;
+    const expiresAt = Date.now() + intervalMs;
     await prisma.room.update({ where: { id: roomId }, data: { currentQrCode: newCode, qrCodeExpiresAt: new Date(expiresAt) } });
     io.to(roomId).emit(SocketEvents.QR_CODE_ROTATION, { code: newCode, expiresAt });
   };
-  setInterval(rotateQR, (await prisma.room.findUnique({ where: { id: roomId } }))?.qrRotationInterval * 1000 || 30000);
+  setInterval(rotateQR, intervalMs);
 }
 
-export { endQuestion, broadcastLeaderboardUpdate, startQuestionTimer, roomTimers, leaderboardIntervals };
+export { endQuestion, broadcastLeaderboardUpdate, roomTimers, leaderboardIntervals };

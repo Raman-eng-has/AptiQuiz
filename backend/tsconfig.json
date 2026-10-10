@@ -20,6 +20,6 @@
       "@aptiquiz/shared": ["../shared/src"]
     }
   },
-  "include": ["src/index.ts", "src/middleware/**/*", "src/routes/*.ts"],
-  "exclude": ["node_modules", "dist", "prisma", "tests", "src/socket", "src/routes.bak"]
+  "include": ["src/index.ts", "src/middleware/**/*", "src/routes/*.ts", "src/socket/**/*"],
+  "exclude": ["node_modules", "dist", "prisma", "tests", "src/routes.bak", "src/routes.disabled"]
 }

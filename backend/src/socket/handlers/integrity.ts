@@ -41,7 +41,7 @@ export async function handleIntegrityEvent(
         playerId,
         type: event.type,
         severity: severityMap[event.type] || 'LOW',
-        details: event.details,
+        details: event.details as any,
         timestamp: new Date(),
       },
     });

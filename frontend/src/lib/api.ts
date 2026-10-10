@@ -28,7 +28,10 @@ async function request<T>(
     (headers as Record<string, string>)['Authorization'] = authHeader;
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE.replace(/\/$/, '')}${cleanEndpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers,
     credentials: 'include',
@@ -37,6 +40,9 @@ async function request<T>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
+      window.location.href = '/login';
+    }
     throw new ApiError(
       response.status,
       data.code || 'ERROR',

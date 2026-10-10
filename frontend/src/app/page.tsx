@@ -2,25 +2,15 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-      <nav className="fixed top-0 left-0 right-0 z-50 glass border-b border-gray-200/50 dark:border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-primary-600 dark:text-primary-400">AptiQuiz</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <Link href="/login" className="btn-ghost text-sm">Sign In</Link>
-              <Link href="/register" className="btn-primary text-sm">Get Started</Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <main className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex flex-col justify-between">
+      <Navbar />
 
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32">
+      <section className="relative pt-20 pb-20 lg:pt-32 lg:pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <motion.div
@@ -156,28 +146,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Campus Preparation Pillars */}
       <section className="py-20 bg-gray-50 dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Trusted by students at top colleges
+              Comprehensive Assessment Categories
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300">
-              Join thousands preparing for placements, GATE, and competitive exams
+              Designed according to corporate placement patterns and competitive standard syllabi
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-center">
-            {['NIET', 'DTU', 'NSUT', 'IIIT', 'BITS', 'NIT', 'VIT', 'SRM'].map((college) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 items-center justify-center">
+            {[
+              { title: 'Quantitative Aptitude', count: '1,200+ Questions', icon: '📐' },
+              { title: 'Logical Reasoning', count: '950+ Questions', icon: '🧩' },
+              { title: 'Verbal Ability', count: '800+ Questions', icon: '📖' },
+              { title: 'Data Interpretation', count: '500+ Questions', icon: '📊' },
+            ].map((cat) => (
               <motion.div
-                key={college}
-                initial={{ opacity: 0, scale: 0.9 }}
+                key={cat.title}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.4 }}
-                className="text-center p-4"
+                className="card p-6 text-center space-y-2"
               >
-                <div className="text-2xl font-bold text-gray-400 dark:text-gray-500 mb-1">{college}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Students Active</div>
+                <span className="text-3xl block">{cat.icon}</span>
+                <div className="text-base font-bold text-gray-900 dark:text-white">{cat.title}</div>
+                <div className="text-xs text-primary-600 dark:text-primary-400 font-semibold">{cat.count}</div>
               </motion.div>
             ))}
           </div>
@@ -207,58 +204,17 @@ export default function HomePage() {
             transition={{ delay: 0.2 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Link href="/register" className="btn bg-white text-primary-600 hover:bg-primary-50 text-lg px-8 py-3 w-full sm:w-auto">
+            <Link href="/register" className="btn bg-white text-primary-600 hover:bg-primary-50 text-lg px-8 py-3 w-full sm:w-auto font-semibold">
               Create Free Account
             </Link>
-            <Link href="/quiz/explore" className="btn border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-3 w-full sm:w-auto">
+            <Link href="/quiz/explore" className="btn border-2 border-white text-white hover:bg-white/10 text-lg px-8 py-3 w-full sm:w-auto font-semibold">
               Explore Quizzes First
             </Link>
           </motion.div>
         </div>
       </section>
 
-      <footer className="py-12 bg-gray-50 dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">AptiQuiz</h3>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Real-time multiplayer aptitude quiz platform for college students.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li><Link href="/quiz/explore" className="hover:text-primary-600">Quiz Explorer</Link></li>
-                <li><Link href="/quiz/builder" className="hover:text-primary-600">Quiz Builder</Link></li>
-                <li><Link href="/leagues" className="hover:text-primary-600">Leagues</Link></li>
-                <li><Link href="/rankings" className="hover:text-primary-600">Rankings</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Resources</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li><Link href="/docs" className="hover:text-primary-600">Documentation</Link></li>
-                <li><Link href="/api-docs" className="hover:text-primary-600">API Reference</Link></li>
-                <li><Link href="/fair-play" className="hover:text-primary-600">Fair Play Policy</Link></li>
-                <li><Link href="/privacy" className="hover:text-primary-600">Privacy</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <li><Link href="/about" className="hover:text-primary-600">About</Link></li>
-                <li><Link href="/blog" className="hover:text-primary-600">Blog</Link></li>
-                <li><Link href="/careers" className="hover:text-primary-600">Careers</Link></li>
-                <li><Link href="/contact" className="hover:text-primary-600">Contact</Link></li>
-              </ul>
-            </div>
-          </div>
-          <div className="pt-8 border-t border-gray-200 dark:border-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
-            © 2024 AptiQuiz. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }

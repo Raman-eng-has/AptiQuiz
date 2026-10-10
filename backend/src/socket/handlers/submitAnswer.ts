@@ -30,7 +30,7 @@ export async function handleSubmitAnswer(
       where: { id: roomId },
       include: {
         quiz: { include: { questions: { include: { question: true }, orderBy: { order: 'asc' } } } },
-        players: { where: { id: playerId } },
+        players: { where: { id: playerId }, include: { user: { select: { id: true, name: true, avatarUrl: true } } } },
       },
     });
 

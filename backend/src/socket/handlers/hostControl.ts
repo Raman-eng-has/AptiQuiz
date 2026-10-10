@@ -1,8 +1,9 @@
 import { Server, Socket } from 'socket.io';
 import { prisma } from '../../index.js';
 import { v4 as uuidv4 } from 'uuid';
-import { SocketEvents, RoomStatus, HostControlAction, UserRole } from '../constants.js';
+import { SocketEvents, RoomStatus, HostControlAction } from '../constants.js';
 import { startQuestionTimer, endQuestion, broadcastRoomState, roomTimers, leaderboardIntervals } from '../index.js';
+import { UserRole } from '@prisma/client';
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -22,7 +23,10 @@ export async function handleHostControl(
     const { roomId, userId, role } = socket.data;
     if (!roomId) return;
 
-    const room = await prisma.room.findUnique({ where: { id: roomId } });
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: { quiz: { include: { questions: { include: { question: true }, orderBy: { order: 'asc' } } } } }
+    });
     if (!room) return;
     if (room.hostId !== userId && role !== UserRole.SUPER_ADMIN) return;
 

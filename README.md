@@ -237,14 +237,47 @@ npm run docker:up           # Start PostgreSQL + Redis
 npm run docker:down         # Stop databases
 ```
 
+## Deployment
+
+### Live Deployments
+- **Frontend (Vercel)**: [https://aptiquiz-phi.vercel.app](https://aptiquiz-phi.vercel.app)
+- **Backend (Render)**: [https://aptiquiz-api.onrender.com](https://aptiquiz-api.onrender.com)
+
+### Environment Variables
+
+#### Backend (Render / Production)
+| Variable | Description | Example / Default |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
+| `JWT_SECRET` | Secret key for signing JWT tokens | `min-32-chars-secure-jwt-key` |
+| `FRONTEND_URL` | Allowed CORS origin & join links | `https://aptiquiz-phi.vercel.app` |
+| `PORT` | Listening port on Render | `4000` |
+| `NODE_ENV` | Environment mode | `production` |
+| `REDIS_URL` | Optional Redis URL for caching | `redis://...` |
+
+#### Frontend (Vercel / Production)
+| Variable | Description | Example / Default |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend REST API endpoint | `https://aptiquiz-api.onrender.com/api` |
+| `NEXT_PUBLIC_SOCKET_URL` | Backend Socket.IO endpoint | `https://aptiquiz-api.onrender.com` |
+
+### Production Build Order
+```bash
+npm run build
+# Executes:
+# 1. npm run build --workspace=shared
+# 2. npm run build --workspace=backend
+# 3. npm run build --workspace=frontend
+```
+
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Framer Motion, PWA
+- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Framer Motion, PWA, zustand
 - **Backend**: Node.js, Express, TypeScript, Socket.IO, Prisma ORM
 - **Database**: PostgreSQL 16 (primary), Redis 7 (cache/sessions)
-- **Auth**: JWT (email/password), OAuth (Google, GitHub, LinkedIn)
-- **Testing**: Vitest (unit), Playwright (e2e), Custom load test
-- **Deployment**: Docker, Docker Compose
+- **Auth**: JWT (email/password), role-based access control
+- **Testing**: Vitest (unit), Custom load test
+- **Deployment**: Vercel (Frontend), Render (Backend), Docker
 
 ## License
 

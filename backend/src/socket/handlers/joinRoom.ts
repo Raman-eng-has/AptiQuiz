@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { prisma } from '../../index.js';
 import { v4 as uuidv4 } from 'uuid';
-import { SocketEvents, RoomStatus, RoomJoinMode, UserRole, JoinRoomData, JoinRoomResponse, RoomState } from '../constants.js';
+import { SocketEvents, RoomStatus, RoomJoinMode, JoinRoomData, JoinRoomResponse, RoomState } from '../constants.js';
+import { UserRole } from '@prisma/client';
 import { broadcastRoomState, startQuestionTimer } from '../index.js';
 
 interface AuthenticatedSocket extends Socket {

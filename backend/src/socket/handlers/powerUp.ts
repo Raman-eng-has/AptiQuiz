@@ -26,7 +26,10 @@ export async function handlePowerUpUse(
 
     const room = await prisma.room.findUnique({
       where: { id: roomId },
-      include: { quiz: true, players: { where: { id: playerId } } },
+      include: {
+        quiz: { include: { questions: { include: { question: true }, orderBy: { order: 'asc' } } } },
+        players: { where: { id: playerId } },
+      },
     });
     if (!room) return callback({ success: false, error: 'Room not found' });
     if (!room.quiz.enablePowerUps) return callback({ success: false, error: 'Power-ups disabled' });

@@ -1,14 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   Difficulty,
   SCORE_BASE_POINTS,
   SPEED_BONUS_MULTIPLIER,
   STREAK_BONUS_PER_CORRECT,
   MAX_STREAK_BONUS,
-  checkAnswer,
-  calculateScore,
-  calculateLatencyCompensation,
-} from '../shared/src/scoring';
+} from '@aptiquiz/shared';
 
 describe('Scoring', () => {
   describe('Base Points', () => {

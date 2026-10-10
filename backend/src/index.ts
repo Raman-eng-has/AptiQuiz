@@ -15,14 +15,29 @@ import { analyticsRouter } from './routes/analytics.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authMiddleware } from './middleware/auth.js';
 
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { setupSocketHandlers } from './socket/index.js';
+
+// Startup check for required environment variables
+if (!process.env.DATABASE_URL) {
+  console.error('❌ Error: DATABASE_URL is missing in environment variables');
+}
+if (!process.env.JWT_SECRET) {
+  console.error('❌ Error: JWT_SECRET is missing in environment variables');
+}
+
 export const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
 const app = express();
+const httpServer = http.createServer(app);
+
+const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000', credentials: true }));
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -42,11 +57,22 @@ app.use('/api/analytics', authMiddleware, analyticsRouter);
 
 app.use(errorHandler);
 
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: allowedOrigin,
+    credentials: true,
+  },
+  transports: ['websocket', 'polling'],
+});
+
+setupSocketHandlers(io);
+
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`🚀 Server and Socket.IO running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 Allowed CORS origin: ${allowedOrigin}`);
 });
 
 process.on('SIGTERM', async () => {

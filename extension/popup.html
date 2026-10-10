@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AptiQuiz Fair Play</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width: 320px; padding: 16px; background: #fff; color: #111; }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .logo { width: 32px; height: 32px; background: linear-gradient(135deg, #0ea5e9, #d946ef); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; }
+    .title { font-size: 16px; font-weight: 600; }
+    .status { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+    .status.active { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    .status.inactive { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.active { background: #22c55e; }
+    .dot.inactive { background: #ef4444; }
+    .details { font-size: 12px; color: #6b7280; margin-bottom: 16px; line-height: 1.5; }
+    .detail-row { display: flex; justify-content: space-between; margin: 4px 0; }
+    .btn { width: 100%; padding: 10px 16px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #0ea5e9; color: white; }
+    .btn-primary:hover { background: #0284c7; }
+    .btn-secondary { background: #f3f4f6; color: #374151; }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+    .warning { color: #f59e0b; font-size: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">AQ</div>
+    <div class="title">AptiQuiz Fair Play</div>
+  </div>
+
+  <div id="status" class="status inactive">
+    <div class="dot inactive"></div>
+    <span>Not in a quiz</span>
+  </div>
+
+  <div id="details" class="details" style="display: none;">
+    <div class="detail-row"><span>Room:</span><span id="roomId">-</span></div>
+    <div class="detail-row"><span>Player:</span><span id="playerId">-</span></div>
+    <div class="detail-row"><span>Events:</span><span id="eventCount">0</span></div>
+    <div class="detail-row"><span>Uptime:</span><span id="uptime">0s</span></div>
+  </div>
+
+  <div id="warning" class="warning" style="display: none;">
+    ⚠ Fair Play mode is required for this quiz. Extension must remain active.
+  </div>
+
+  <button id="toggleBtn" class="btn btn-secondary" disabled>Start Monitoring</button>
+
+  <div class="footer">
+    Privacy-minimal • Only active during quiz • <a href="https://aptiquiz.com/privacy" target="_blank" style="color: inherit;">Privacy Policy</a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

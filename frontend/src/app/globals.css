@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+
+  * {
+    @apply border-gray-200 dark:border-gray-700;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply font-sans;
+  }
+
+  ::selection {
+    @apply bg-primary-500/30;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-gray-900;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 active:bg-primary-800;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700;
+  }
+
+  .btn-danger {
+    @apply btn bg-danger-500 text-white hover:bg-danger-600 focus:ring-danger-500;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 focus:ring-primary-500;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .input-error {
+    @apply border-danger-500 focus:ring-danger-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden;
+  }
+
+  .card-hover {
+    @apply card transition-shadow duration-300 hover:shadow-lg;
+  }
+
+  .glass {
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border border-white/20 dark:border-gray-700/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-300;
+  }
+
+  .badge-success {
+    @apply badge bg-success-50 text-success-600 dark:bg-success-500/20 dark:text-success-400;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-50 text-warning-600 dark:bg-warning-500/20 dark:text-warning-400;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger-50 text-danger-600 dark:bg-danger-500/20 dark:text-danger-400;
+  }
+
+  .avatar {
+    @apply w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-400 font-medium overflow-hidden;
+  }
+
+  .avatar-sm {
+    @apply w-8 h-8 text-sm;
+  }
+
+  .avatar-lg {
+    @apply w-14 h-14 text-lg;
+  }
+
+  .avatar-xl {
+    @apply w-20 h-20 text-xl;
+  }
+
+  .leaderboard-row {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ease-out;
+  }
+
+  .leaderboard-row-current {
+    @apply leaderboard-row bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800;
+  }
+
+  .leaderboard-row-top3 {
+    @apply leaderboard-row;
+  }
+
+  .leaderboard-row-1 {
+    @apply leaderboard-row-top3 bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900/30 dark:to-yellow-800/30 border border-yellow-300 dark:border-yellow-700;
+  }
+
+  .leaderboard-row-2 {
+    @apply leaderboard-row-top3 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700/30 dark:to-gray-600/30 border border-gray-300 dark:border-gray-600;
+  }
+
+  .leaderboard-row-3 {
+    @apply leaderboard-row-top3 bg-gradient-to-r from-amber-100 to-amber-200 dark:from-amber-900/30 dark:to-amber-800/30 border border-amber-300 dark:border-amber-700;
+  }
+
+  .option-button {
+    @apply w-full p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:border-primary-300 dark:hover:border-primary-700 active:scale-[0.98];
+  }
+
+  .option-button-selected {
+    @apply option-button border-primary-500 bg-primary-50 dark:bg-primary-900/30;
+  }
+
+  .option-button-correct {
+    @apply option-button border-success-500 bg-success-50 dark:bg-success-500/20;
+  }
+
+  .option-button-wrong {
+    @apply option-button border-danger-500 bg-danger-50 dark:bg-danger-500/20;
+  }
+
+  .countdown-ring {
+    @apply relative w-24 h-24 mx-auto;
+  }
+
+  .countdown-ring svg {
+    @apply transform -rotate-90;
+  }
+
+  .countdown-ring circle {
+    @apply transition-all duration-1000 ease-linear;
+  }
+
+  .countdown-ring .bg {
+    @apply text-gray-200 dark:text-gray-700;
+  }
+
+  .countdown-ring .progress {
+    @apply text-primary-500;
+  }
+
+  .countdown-ring .progress.warning {
+    @apply text-warning-500;
+  }
+
+  .countdown-ring .progress.danger {
+    @apply text-danger-500;
+  }
+
+  .score-pop {
+    @apply animate-scale-in;
+  }
+
+  .page-transition {
+    @apply animate-fade-in;
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  }
+
+  .tooltip {
+    @apply absolute z-50 px-3 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded-lg shadow-lg opacity-0 invisible transition-all duration-200;
+  }
+
+  .tooltip-visible {
+    @apply opacity-100 visible;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: animateIn 0.3s ease-out forwards;
+  }
+
+  @keyframes animateIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

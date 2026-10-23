@@ -1,190 +1,163 @@
-# AptiQuiz
+# AptiQuiz 🏆
+### Real-Time Multiplayer Aptitude Arena for Campus Placements & GATE
 
-A real-time multiplayer aptitude quiz platform for college students.
+[![Next.js](https://img.shields.io/badge/Next.js-14_App_Router-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Express](https://img.shields.io/badge/Express-4-green?style=for-the-badge&logo=express)](https://expressjs.com/)
+[![Socket.IO](https://img.shields.io/badge/Socket.IO-4-white?style=for-the-badge&logo=socket.io)](https://socket.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-darkblue?style=for-the-badge&logo=prisma)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-sky?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-## Overview
+---
 
-AptiQuiz enables up to 50 students to join a room and race through aptitude, logic, verbal, and data-interpretation questions simultaneously. Features live leaderboards, scoring that rewards accuracy and speed, league systems, and comprehensive analytics.
+## 🌐 Live Deployments
 
-## Architecture
+* **Live Frontend Web App (Vercel)**: [https://aptiquiz-phi.vercel.app](https://aptiquiz-phi.vercel.app)
+* **Live Backend API & WebSocket Server (Render)**: [https://aptiquiz-api.onrender.com](https://aptiquiz-api.onrender.com)
+* **Health Check Endpoint**: [https://aptiquiz-api.onrender.com/health](https://aptiquiz-api.onrender.com/health)
+
+---
+
+## 🎯 Problem Statement 3: AptiQuiz Overview
+
+### The Background
+Aptitude and logical reasoning tests are the **first elimination filter** in campus placements (TCS, Infosys, Wipro, Capgemini, Cognizant, etc.) and competitive entrance examinations (GATE, CAT). They reject thousands of capable students every year—primarily because of speed and time pressure, not lack of ability. Practicing alone from static PDFs is dull, slow, and lacks the adrenaline of competing under a countdown timer with peers.
+
+### The Challenge
+Build a real-time multiplayer web app where up to **50 students** join a room and race through aptitude and logic questions simultaneously. Everyone sees the same question together, answers against the clock, and watches a live leaderboard move. The app must be fast, fair under network delay, cheat-resistant, accessible, and deep enough that colleges can run seasonal leagues on it.
+
+---
+
+## 📋 Requirements & Implementation Matrix
+
+| Requirement from Problem Statement 3 | AptiQuiz Implementation | Status |
+|---|---|:---:|
+| **1. Question Authoring** | Host studio at `/quiz/builder`: Create question sets with text, 4 options, correct answer, per-question topic & difficulty (`EASY`/`MEDIUM`/`HARD`), optional image/diagram URL, CSV data tables, and `↑ Move Up` / `↓ Move Down` reordering. | ✅ Complete |
+| **2. Rooms & Unique QR Codes** | Short 6-character PIN (`ABC123`) + client/server generated **unique QR code** for every quiz card, detail page, and room lobby. Live waiting lobby displays joined players up to 50. | ✅ Complete |
+| **3. Strict Entry Lock (No Late Join)** | Entry is strictly locked the moment the host starts Question 1 (`status !== 'WAITING'`). Late entrants receive `403 Entry Locked`, while legitimate players who drop Wi-Fi can seamlessly reconnect mid-round. | ✅ Complete |
+| **4. Synchronized Live Play** | All players see the question countdown at once. Round ends immediately when time expires or all players submit. Correct answer and step-by-step mathematical explanation revealed. | ✅ Complete |
+| **5. Speed + Accuracy Scoring & Visible Rules** | Base points (`100`/`150`/`200`) + up to `+50%` speed bonus + `+10%` streak bonus (capped at `+50%`) + optional `-25%` negative marking. Collapsible **⚖️ Scoring Rules** visible during play. | ✅ Complete |
+| **6. Live Leaderboard & Movement** | Standings show dynamic rank movement arrows (`▲ +2`, `▼ -1`, `●`). Final results screen shows podium, accuracy %, average speed (s), and topic-wise strengths breakdown. | ✅ Complete |
+| **7. College Leagues** | `/leagues` & `/rankings`: Rooms belong to a college; scores feed seasonal college and student league tables across daily, weekly, monthly, and all-time periods. | ✅ Complete |
+| **8. Server is the Referee** | Server timestamps question starts and answer arrivals. Never trusts client device clocks. Prevents client-side clock tampering. | ✅ Complete |
+| **9. Network Delay Fairness** | Server subtracts one-way transit time (`min(RTT/2, 300ms)`) from elapsed time via periodic ping/pong + `500ms` boundary grace window. | ✅ Complete |
+| **10. Mid-Game Reconnection** | If a student refreshes or loses connection, session JWT restores their score, streak, active question, and remaining timer. | ✅ Complete |
+| **11. Cheating Resistance** | `correctAnswer` is stripped before round completion; options shuffled per player; parameterized numeric templates; tab-switch/blur detection feeds Host Integrity Console. | ✅ Complete |
+| **12. 50-Player Load Tested** | Automated Socket.IO test (`backend/tests/load/simulate-50-players.ts`) simulates 50 concurrent bots with latency, reconnects, and answer races. | ✅ Complete |
+| **13. "Make It Yours" Differentiators** | Strategic power-ups (`⚡ Double Points`, `✂️ 50-50`, `❄️ Time Freeze`), Classroom Projector / Spectator Mode, Teacher CSV Export, Daily Challenge, and Accessibility controls. | ✅ Complete |
+
+---
+
+## 🏗️ System Architecture
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Frontend      │────▶│    Backend      │────▶│   PostgreSQL    │
-│   (Next.js)     │     │   (Node.js)     │     │   (Primary DB)  │
-│   Port 3000     │     │   Port 4000     │     │   Port 5432     │
-└─────────────────┘     └────────┬────────┘     └─────────────────┘
-                                 │
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-            ┌─────────────┐           ┌─────────────┐
-            │   Redis     │           │  Socket.IO  │
-            │  (Cache/    │           │  (Real-time)│
-            │  Sessions)  │           │             │
-            │  Port 6379  │           └─────────────┘
-            └─────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           APTIQUIZ ARCHITECTURE                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+           ┌─────────────────────────┴─────────────────────────┐
+           ▼                                                   ▼
+┌─────────────────────────────────────┐     ┌─────────────────────────────────────┐
+│         FRONTEND (Next.js 14)       │     │        BACKEND (Express + TS)       │
+│  - App Router, React 18, Tailwind   │     │  - REST API & Route Controllers     │
+│  - Zustand State & Auth Store       │────▶│  - Socket.IO Real-Time Engine       │
+│  - socket.io-client & QRCode (DPI)  │     │  - Latency Compensator & Referee    │
+│  - Web Audio API Sound Synthesizer  │◀────│  - Anti-Cheat & Integrity Monitor   │
+│  - Framer Motion Micro-Interactions │     │  - CSV / Attendance Exporters       │
+└─────────────────────────────────────┘     └──────────────────┬──────────────────┘
+                                                               │
+                                       ┌───────────────────────┴───────────────────────┐
+                                       ▼                                               ▼
+                         ┌───────────────────────────┐                   ┌───────────────────────────┐
+                         │   PostgreSQL + Prisma     │                   │       Redis (Optional)    │
+                         │   - User, Quiz, Question  │                   │   - Session Caching       │
+                         │   - Room, Player, Answer  │                   │   - Rate Limit Counters   │
+                         │   - LeagueScore, College  │                   │   - Pub/Sub Socket Sync   │
+                         └───────────────────────────┘                   └───────────────────────────┘
 ```
 
-## Quick Start
+---
 
-### Prerequisites
-- Node.js 20+
-- Docker & Docker Compose
-- pnpm (recommended) or npm
+## 📱 Unique QR Codes & Strict Entry Lock (No Late Entry)
 
-### One-Command Setup
+### 1. Unique QR Code per Quiz & Room
+* **Every Quiz Card (`/quiz/explore`)**: Features a **📱 QR Code** button that instantly generates a unique QR code (`${origin}/quiz/${quiz.id}`) with the quiz title, category, copyable link, and PNG download.
+* **Quiz Detail & Practice Page (`/quiz/[id]`)**: Displays a **📱 Unique Quiz QR** button in the header so teachers can share worksheet links effortlessly.
+* **Live Waiting Lobby (`/room/[code]`) & Host Console (`/room/[code]/host`)**: Generates a high-contrast room QR code (`${origin}/join?code=${code}`) that auto-fills the 6-character PIN upon scanning with any smartphone camera.
+* **Classroom Projector / Spectator View**: Fullscreen projector modal in the Host Console showing a giant QR code, 6-character room PIN, and live Top-10 standings for auditorium or smartboard projection.
 
-```bash
-# Clone and navigate
-cd AptiQuiz
+### 2. Strict Entry Lock After Quiz Starts
+* **Policy**: When a host creates a room, it begins in `WAITING` status (`🟢 Entry Open`).
+* **The Lock**: The instant the host clicks **▶️ Start Contest & Lock Entry**, the room status transitions to `LIVE` and `allowLateJoin` is strictly enforced as `false`.
+* **Outsider Rejection**: Anyone scanning the QR code or visiting `/join?code=XXXXXX` after start is blocked with:
+  > **🔒 Entry Locked: This quiz has already started! New participants cannot enter after the host starts the quiz.**
+* **Reconnection Exception**: Legitimate players who joined during the lobby phase and registered their session are allowed to reconnect mid-game if they refresh or switch networks, restoring their score, streak, current question, and remaining timer intact.
 
-# Copy environment file
-cp .env.example .env
+---
 
-# Start databases
-npm run docker:up
+## ⚖️ How the Server Keeps Timer & Scoring Fair Across Devices
 
-# Install dependencies
-npm install
+1. **The Server is the Sole Referee**: Client device clocks (`Date.now()`) are never trusted. The server records the authoritative `questionStartTime` using monotonic high-resolution timers and timestamps incoming submissions at arrival (`serverReceivedAt`).
+2. **RTT/2 Network Latency Compensation**: Because a student on 4G might experience 150ms network delay compared to a student on campus fiber, the server measures each socket's Round-Trip Time (`RTT`) via continuous heartbeat pings. The server subtracts one-way transit time (`min(RTT / 2, 300ms)`) from the elapsed response time:
+   $$\text{Effective Time} = \max\left(0,\; (T_{\text{serverReceive}} - T_{\text{start}}) - \min\left(\frac{\text{RTT}}{2},\; 300\text{ ms}\right)\right)$$
+   The 300ms cap prevents malicious players from artificially spoofing high latency.
+3. **500ms Boundary Grace Window**: If a submission arrives up to 500ms after the question timer expires, the server accepts it if the network-adjusted send time fell within the legitimate time limit.
 
-# Generate Prisma client
-npm run db:generate
+---
 
-# Push schema to database
-npm run db:push
+## 📐 Scoring Rules & Mathematical Formula
 
-# Seed database with test data
-npm run db:seed
+$$\text{Speed Bonus} = \text{round}\left(\text{Base Points} \times 0.5 \times \left(1 - \frac{\text{Effective Time}}{\text{Time Limit}}\right)\right)$$
 
-# Start development servers
-npm run dev
-```
+$$\text{Streak Bonus} = \text{round}\left(\text{Base Points} \times \min(\text{Streak} \times 0.10,\; 0.50)\right)$$
 
-The app will be available at:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:4000
-- WebSocket: ws://localhost:4000
+$$\text{Total Question Score} = (\text{Base Points} + \text{Speed Bonus} + \text{Streak Bonus}) \times \text{PowerUp Multiplier}$$
 
-### Test Accounts (after seeding)
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | admin@aptiquiz.com | password123 |
-| Host | host@niit.com | password123 |
-| Student 1 | student1@niit.com | password123 |
-| Student 2 | student2@niit.com | password123 |
-| Student 3 | student3@niit.com | password123 |
-| College Admin | admin@niit.com | password123 |
+* **Base Points by Difficulty**: Easy = `100` pts, Medium = `150` pts, Hard = `200` pts.
+* **Streak Multiplier**: `+10%` per consecutive correct answer, capped at `+50%` (at 5+ streak). Wrong answers reset streak to `0`.
+* **Negative Marking**: Optional per quiz (default `0%`, or `-25%` penalty if enabled by host).
 
-**Room Code:** `ABC123`
+---
 
-## Scoring Rules
+## ⚡ Strategic Power-Ups (1 per Match)
 
-### Base Points by Difficulty
-- Easy: 100 points
-- Medium: 150 points
-- Hard: 200 points
+1. **⚡ Double Points**: Multiplies score by `2×` on correct answer.
+2. **✂️ 50-50**: Server eliminates two incorrect options from the student's screen.
+3. **❄️ Time Freeze**: Adds `+5 seconds` of extra thinking time to the student's timer.
 
-### Speed Bonus
-```
-Speed Bonus = Base Points × 0.5 × (Time Remaining / Time Limit)
-```
-Measured by server receive time relative to server question start.
+---
 
-### Streak Bonus
-- +10% per consecutive correct answer
-- Capped at +50% (5+ streak)
+## ♿ Accessibility & Low-Data Controls
 
-### Power-ups
-- **Double Points**: 2× points for that question
-- **50-50**: Removes two wrong options
-- **Time Freeze**: +5 seconds (not on last question)
+* **Color-Blind-Safe Geometric Shapes**: Option choices display distinct shapes alongside letters (`▲ A`, `◆ B`, `● C`, `■ D`), ensuring students never have to rely on color perception alone.
+* **Zero-Bandwidth Web Audio Synth (`🔊 Sound / 🔇 Muted`)**: Synthesizes countdown ticks, answer locks, and round chimes directly in the browser via Web Audio `AudioContext` with zero asset downloads.
+* **Accessible Large Text Toggle (`🔤 Large Text`)**: Increases font size across prompts and options for students with visual impairments or viewing from a distance.
 
-### Negative Marking
-Optional per quiz (default 0%, host can set -25%)
+---
 
-## Network Delay Handling
+## 📚 NIET Placement & GATE Curriculum (16 Quizzes, 102+ MCQs)
 
-### Latency Compensation
-1. **RTT Measurement**: Each player's round-trip time measured via Socket.IO ping/pong
-2. **One-way Estimate**: RTT / 2
-3. **Elapsed Calculation**: `Server Receive Time - Question Start Time - One-way Latency`
-4. **Latency Credit**: Clamped to maximum 300ms credit (prevents fake lag advantage)
+All 10 chapters from the NIET Placement Aptitude & GATE curriculum are seeded with step-by-step shortcut formulas:
 
-### Grace Window
-- 500ms after question end accepted if client-reported send time consistent with server timeline
-- Otherwise rejected
+1. **Dice & Cubes** (Standard/General dice opposite rules, open net unfolding)
+2. **Order & Ranking** (Total count formula $T = L + R - 1$, overlapping rank shifts)
+3. **Logical Reasoning Puzzles** (Floor/box puzzles, scheduling, deduction grids)
+4. **Syllogism** (Venn logic, *Some/All/No*, *Either-Or* complementary pairs)
+5. **Time & Work / Pipes & Cisterns** (LCM work method, negative efficiency of leak pipes)
+6. **Time, Speed, Distance, Trains & Boats** (Relative speed, crossing poles vs platforms, upstream/downstream)
+7. **Business Math 7A & 7B** (Percentage, Profit & Loss, Simple & Compound Interest, Ratio & Ages)
+8. **Number System & HCF/LCM** (Divisibility tests, cyclicity of unit digits, remainder theorem)
+9. **Seating Arrangement** (Circular facing center/outside, linear north/south rows)
+10. **Non-Verbal Reasoning** (Pattern completion, figure matrix series, mirror & water images)
 
-### Tie-Breaking
-- Deterministic: Server arrival order using monotonic clock
-- Then by answer sequence ID
+---
 
-### Idempotency
-- Each answer carries unique sequence ID
-- Only first valid answer per player per question counts
-- Duplicates ignored
+## 📊 50-Player Load Test & Recorded Benchmark Results
 
-## Reconnection Design
-
-- Session token per player (JWT in socket auth)
-- On reconnect: player rejoins with same score, streak, power-ups
-- Sees current question with correct remaining time
-- If already answered: "Answer locked" shown
-- Other players see small "reconnecting" indicator only
-- Host sees connection status in real-time
-
-## Anti-Cheat Measures
-
-### Server-Side (Enforced)
-- Correct answers never sent before round ends
-- Per-player shuffled options and question order
-- Parameterized numbers per player
-- Random question pools in self-paced mode
-- One account, one seat per room
-- Rate limiting on all socket events
-- Timing analysis: flags answers too fast to read
-- Statistical anomaly detection
-- Signed answers, TLS only, input validation
-
-### Client-Side (Deterrents)
-- Fullscreen request
-- Tab/window visibility & focus-loss detection
-- DevTools detection (heuristic)
-- Block right-click, copy, paste, text selection
-- Watermark question screen with player ID
-- Blur question on tab blur
-- Fair Play Pledge acceptance required
-
-### Fair Play Browser Extension (Optional)
-- Manifest V3 extension for Chrome/Edge/Firefox
-- Reports active tab changes during quiz
-- Detects other tabs/windows opened during quiz
-- Blocks clipboard reads on quiz tab
-- Signed heartbeat to server
-- Missing heartbeat = flagged
-- Privacy-minimal: only active during quiz
-
-### Integrity Score
-- 0-100 score from combined signals
-- Host sees flag list with evidence
-- Actions: Warning, Score Deduction, Exclude from League
-- Never auto-bans; informs human decisions
-
-### Honest Limits
-> No web app can fully stop a determined cheater with a second device. The strongest defense is physical-presence mode with host supervision, short per-question timers, randomization, and statistical detection.
-
-## Unique QR Codes & Strict Entry Validation (No Late Entry)
-
-- **Unique QR Code per Quiz & Room**: Every quiz card on `/quiz/explore`, every quiz detail page (`/quiz/[id]`), and every live multiplayer room (`/room/[code]` and `/room/[code]/host`) generates a unique, downloadable QR code.
-- **Strict Entry Lock**: Players can scan the QR code or enter the 6-character PIN to join the waiting lobby while `room.status === 'WAITING'`. The moment the host starts Question 1 (`status === 'LIVE'`), room entry locks automatically on both the client and server (`403 Entry Locked`). No new player can enter mid-quiz, while existing players who refresh or briefly lose Wi-Fi/4G are recognized and reconnected seamlessly with their score, streak, and remaining timer intact.
-
-## Plain-English Note: How the Server Keeps Timer & Scoring Fair Across Devices
-
-1. **The Server is the Sole Referee**: We never trust a player's phone or laptop clock (`Date.now()` on the client can be skewed or manipulated). The server records the authoritative `questionStartTime` when broadcasting `question:start` and timestamps every incoming `answer:submit` at arrival (`serverReceivedAt`).
-2. **RTT/2 Network Latency Compensation**: Because a student on campus 4G might have a 200ms network delay compared to a student on fiber Wi-Fi, the server continuously measures each socket's Round-Trip Time (`RTT`) via heartbeat pings. When scoring an answer, the server subtracts one-way transit time (`min(RTT / 2, 300ms)`) from the elapsed time so network lag never costs a student speed-bonus points. The 300ms cap prevents anyone from spoofing artificial lag.
-3. **500ms Boundary Grace Window**: If an answer arrives up to `500ms` after the server timer expires, it is still accepted if the latency-adjusted send time falls within the round's time limit.
-
-## Running the 50-Player Load Test & Recorded Results
-
+To execute the automated 50-player simulation test:
 ```bash
 cd backend
 npm run load:test
@@ -192,111 +165,87 @@ npm run load:test
 npx tsx tests/load/simulate-50-players.ts
 ```
 
-This script (`backend/tests/load/simulate-50-players.ts`) spawns **50 concurrent Socket.IO bot players** joining a single room, simulating:
-- Random network latency (`50ms–800ms`)
-- Concurrent answer submissions across all rounds
-- Mid-game disconnect & reconnect events (`10%` of players drop and rejoin mid-round)
-- Duplicate and late answer attempts (verified rejected by server referee)
+### Verified Load Test Results
+| Metric | Benchmark Result | Performance Target |
+|---|:---:|:---:|
+| **Concurrent Bot Players** | **50 / 50 connected** | 50 players |
+| **Simulated Latency Range** | **50 ms – 800 ms** | Real-world Wi-Fi/4G |
+| **Total 10-Question Match Duration** | **42.8 seconds** | < 60 seconds |
+| **Answer Acknowledgment (`p50` Median)** | **18 ms** | < 50 ms |
+| **Answer Acknowledgment (`p95`)** | **64 ms** | < 150 ms |
+| **Dropped / Lost Socket Events** | **0 (0.0%)** | 0% |
+| **Mid-Game Reconnect Recovery Rate** | **100% (5/5 restored state & score)** | 100% |
+| **Late / Duplicate Answer Rejection** | **100% rejected by server referee** | 100% |
+| **Leaderboard Broadcast Sync Skew** | **< 22 ms across all 50 clients** | < 100 ms |
 
-### Recorded 50-Player Load Test Results
-| Metric | Result | Target |
-|--------|--------|--------|
-| Concurrent Players in Room | **50 / 50 connected** | 50 players |
-| Total 10-Question Match Duration | **42.8 seconds** | < 60s |
-| Answer Ack Latency (`p50` / Median) | **18 ms** | < 50 ms |
-| Answer Ack Latency (`p95`) | **64 ms** | < 150 ms |
-| Dropped / Lost Socket Events | **0 (0.0%)** | 0% |
-| Mid-Game Reconnect Recovery Rate | **100% (5/5 restored state & score)** | 100% |
-| Duplicate / Late Answer Rejection | **100% blocked by server referee** | 100% |
-| Leaderboard Broadcast Sync Skew | **< 22 ms across all 50 clients** | < 100 ms |
+---
 
-## Demo Script (3 Minutes)
+## 🛠️ Local Development & Quick Start
 
-1. **Landing Page** (30s): Show landing, click "Host a Quiz"
-2. **Create Quiz** (45s): Build a 5-question quiz, add parameterized question
-3. **Create Room** (30s): Generate room, show QR code, copy join link
-4. **Join as Students** (45s): Open 2-3 browser tabs/incognito, join with nicknames
-5. **Live Play** (45s): Host starts, answer questions, watch live leaderboard animate
-6. **Results & Share** (30s): Show final results, share card, profile with badges
-7. **Analytics** (15s): Host views question analytics, exports CSV
+### 1. Prerequisites
+* **Node.js**: v20+
+* **npm**: v10+
+* **Docker Desktop**: (Optional, for running local PostgreSQL & Redis)
 
-## Development
+### 2. Setup & Installation
+```bash
+# Clone the repository
+git clone https://github.com/Raman-eng-has/AptiQuiz.git
+cd AptiQuiz
 
-### Project Structure
+# Install all dependencies across workspaces
+npm install
+
+# Build shared package
+npm run build --workspace=shared
+
+# Start development servers
+npm run dev
+```
+
+The application runs locally on:
+* **Frontend**: `http://localhost:3000`
+* **Backend API**: `http://localhost:4000/api`
+* **WebSocket**: `ws://localhost:4000`
+
+### 3. Demo Test Accounts
+| Role | Email | Password |
+|---|---|---|
+| **Quiz Host / Faculty** | `host@niit.com` | `password123` |
+| **Super Admin** | `admin@aptiquiz.com` | `password123` |
+| **College Admin** | `admin@niit.com` | `password123` |
+| **Student 1** | `student1@niit.com` | `password123` |
+| **Student 2** | `student2@niit.com` | `password123` |
+
+---
+
+## 📂 Project Structure
+
 ```
 AptiQuiz/
-├── frontend/          # Next.js 14 + TypeScript + Tailwind + Framer Motion
-├── backend/           # Node.js + TypeScript + Express + Socket.IO + Prisma
-├── shared/            # Shared types, schemas, constants (Zod)
-├── docker-compose.yml # PostgreSQL + Redis
-└── package.json       # Root workspace config
+├── frontend/                  # Next.js 14 App Router + Tailwind + Zustand
+│   ├── src/app/
+│   │   ├── quiz/explore/      # Quiz card browser with unique QR modals
+│   │   ├── quiz/[id]/         # Interactive practice & full worksheet solutions
+│   │   ├── quiz/builder/      # Question authoring studio with reordering
+│   │   ├── room/[code]/       # Live lobby with QR code & strict entry lock
+│   │   ├── room/[code]/host/  # Host console with projector & spectator view
+│   │   ├── room/[code]/play/  # Synchronized play screen with scoring rules
+│   │   ├── room/[code]/results/ # Podium, accuracy %, avg speed, strengths, CSV export
+│   │   ├── leagues/           # College & seasonal league tables
+│   │   └── docs/              # 10-chapter NIET aptitude formula guide
+│   └── src/lib/               # api.ts, auth.ts, socket.ts
+├── backend/                   # Express.js + Socket.IO + Prisma ORM
+│   ├── src/routes/            # auth, quizzes, rooms, leaderboard, analytics
+│   ├── src/socket/            # Handlers: joinRoom, submitAnswer, hostControl
+│   ├── prisma/                # schema.prisma & seed-niet-pdf.mjs
+│   └── tests/load/            # simulate-50-players.ts (50-bot load tester)
+├── shared/                    # @aptiquiz/shared (Zod schemas, types, constants)
+├── README.md                  # Comprehensive platform documentation
+└── package.json               # Root monorepo workspace configuration
 ```
 
-### Commands
-```bash
-# Development
-npm run dev                 # Start both frontend & backend
-npm run dev --workspace=backend
-npm run dev --workspace=frontend
+---
 
-# Database
-npm run db:generate         # Generate Prisma client
-npm run db:push             # Push schema changes
-npm run db:migrate          # Run migrations
-npm run db:seed             # Seed test data
-npm run db:studio           # Open Prisma Studio
-
-# Testing
-npm run test                # Run all tests
-npm run load:test           # 50-player load test (backend)
-
-# Docker
-npm run docker:up           # Start PostgreSQL + Redis
-npm run docker:down         # Stop databases
-```
-
-## Deployment
-
-### Live Deployments
-- **Frontend (Vercel)**: [https://aptiquiz-phi.vercel.app](https://aptiquiz-phi.vercel.app)
-- **Backend (Render)**: [https://aptiquiz-api.onrender.com](https://aptiquiz-api.onrender.com)
-
-### Environment Variables
-
-#### Backend (Render / Production)
-| Variable | Description | Example / Default |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `JWT_SECRET` | Secret key for signing JWT tokens | `min-32-chars-secure-jwt-key` |
-| `FRONTEND_URL` | Allowed CORS origin & join links | `https://aptiquiz-phi.vercel.app` |
-| `PORT` | Listening port on Render | `4000` |
-| `NODE_ENV` | Environment mode | `production` |
-| `REDIS_URL` | Optional Redis URL for caching | `redis://...` |
-
-#### Frontend (Vercel / Production)
-| Variable | Description | Example / Default |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | Backend REST API endpoint | `https://aptiquiz-api.onrender.com/api` |
-| `NEXT_PUBLIC_SOCKET_URL` | Backend Socket.IO endpoint | `https://aptiquiz-api.onrender.com` |
-
-### Production Build Order
-```bash
-npm run build
-# Executes:
-# 1. npm run build --workspace=shared
-# 2. npm run build --workspace=backend
-# 3. npm run build --workspace=frontend
-```
-
-## Tech Stack
-
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Framer Motion, PWA, zustand
-- **Backend**: Node.js, Express, TypeScript, Socket.IO, Prisma ORM
-- **Database**: PostgreSQL 16 (primary), Redis 7 (cache/sessions)
-- **Auth**: JWT (email/password), role-based access control
-- **Testing**: Vitest (unit), Custom load test
-- **Deployment**: Vercel (Frontend), Render (Backend), Docker
-
-## License
-
-MIT
+## 📄 License
+This project is open-source and available under the [MIT License](LICENSE).

@@ -8,10 +8,32 @@ const router = Router();
 router.get('/room/:roomId', asyncHandler(async (req, res) => {
   const room = await prisma.room.findUnique({
     where: { id: req.params.roomId },
-    include: { players: { where: { leftAt: null }, include: { user: { select: { id: true, name: true, avatarUrl: true } }, team: true }, orderBy: { score: 'desc' } } },
+    include: {
+      quiz: { include: { _count: { select: { questions: true } } } },
+      players: {
+        where: { leftAt: null },
+        include: { user: { select: { id: true, name: true, avatarUrl: true } }, team: true },
+        orderBy: { score: 'desc' },
+      },
+    },
   });
   if (!room) throw new AppError(404, 'Room not found');
-  const leaderboard = room.players.map((p, i) => ({ playerId: p.id, userId: p.userId, name: p.user?.name || p.nickname, avatarUrl: p.user?.avatarUrl, score: p.score, rank: i + 1, correctCount: p.correctCount, streak: p.streak, teamId: p.teamId, teamName: p.team?.name }));
+  const totalQ = room.quiz?._count?.questions || 10;
+  const leaderboard = room.players.map((p, i) => ({
+    playerId: p.id,
+    userId: p.userId,
+    name: p.user?.name || p.nickname,
+    avatarUrl: p.user?.avatarUrl,
+    score: p.score,
+    rank: i + 1,
+    correctCount: p.correctCount,
+    totalQuestions: totalQ,
+    accuracy: totalQ > 0 ? Math.round((p.correctCount / totalQ) * 100) : 0,
+    avgSpeedMs: p.correctCount > 0 ? Math.round(p.totalTime / p.correctCount) : 0,
+    streak: p.streak,
+    teamId: p.teamId,
+    teamName: p.team?.name,
+  }));
   res.json({ leaderboard });
 }));
 

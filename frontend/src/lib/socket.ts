@@ -32,7 +32,7 @@ export function initSocket(): TypedSocket {
   if (socket?.connected) return socket;
 
   const token = getAuthHeader()?.replace('Bearer ', '');
-  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
 
   socket = io(socketUrl, {
     auth: { token },

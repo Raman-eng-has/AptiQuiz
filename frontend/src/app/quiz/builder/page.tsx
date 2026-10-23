@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { api } from '@/lib/api';
 import { UserRole } from '@aptiquiz/shared';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -20,8 +21,23 @@ interface QuestionDraft {
   difficulty: 'EASY' | 'MEDIUM' | 'HARD';
   timeLimit: number;
   points: number;
+  imageUrl?: string;
+  tableCsv?: string;
   isParameterized: boolean;
   parameterTemplate?: string;
+}
+
+function parseCsvToTableData(csv?: string) {
+  if (!csv || !csv.trim()) return undefined;
+  const lines = csv
+    .trim()
+    .split('\n')
+    .map((l) => l.split(',').map((c) => c.trim()));
+  if (lines.length < 2) return undefined;
+  return {
+    headers: lines[0],
+    rows: lines.slice(1),
+  };
 }
 
 export default function QuizBuilderPage() {
@@ -34,6 +50,7 @@ export default function QuizBuilderPage() {
   const [negativeMarking, setNegativeMarking] = useState(0); // 0 or 0.25
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdRoomCode, setCreatedRoomCode] = useState<string | null>(null);
+  const [createdRoomQr, setCreatedRoomQr] = useState<string | null>(null);
 
   // Questions state
   const [questions, setQuestions] = useState<QuestionDraft[]>([
@@ -43,11 +60,13 @@ export default function QuizBuilderPage() {
       type: 'SINGLE_CHOICE',
       options: ['18', '24', '30', '36'],
       correctAnswer: '24',
-      explanation: 'Work = men * days = 12 * 4 = 48 man-days. Men needed = 48 / 2 = 24 men.',
+      explanation: 'Work = men × days = 12 × 4 = 48 man-days. Men needed = 48 / 2 = 24 men.',
       topic: 'Time and Work',
       difficulty: 'EASY',
       timeLimit: 60,
       points: 100,
+      imageUrl: '',
+      tableCsv: '',
       isParameterized: false,
     },
   ]);
@@ -66,10 +85,36 @@ export default function QuizBuilderPage() {
       difficulty: 'MEDIUM',
       timeLimit: timePerQuestion,
       points: 100,
+      imageUrl: '',
+      tableCsv: '',
       isParameterized: false,
     };
     setQuestions([...questions, newQ]);
     setActiveTab(questions.length);
+  };
+
+  const duplicateQuestion = (index: number) => {
+    const source = questions[index];
+    if (!source) return;
+    const copy: QuestionDraft = {
+      ...source,
+      id: Date.now().toString(),
+      options: [...source.options],
+    };
+    const next = [...questions];
+    next.splice(index + 1, 0, copy);
+    setQuestions(next);
+    setActiveTab(index + 1);
+  };
+
+  const moveQuestion = (index: number, direction: -1 | 1) => {
+    const targetIdx = index + direction;
+    if (targetIdx < 0 || targetIdx >= questions.length) return;
+    const updated = [...questions];
+    const [moved] = updated.splice(index, 1);
+    updated.splice(targetIdx, 0, moved);
+    setQuestions(updated);
+    setActiveTab(targetIdx);
   };
 
   const removeQuestion = (index: number) => {
@@ -110,16 +155,22 @@ export default function QuizBuilderPage() {
       // 2. Create questions & attach to quiz
       for (let i = 0; i < questions.length; i++) {
         const q = questions[i];
+        const tableData = parseCsvToTableData(q.tableCsv);
         const qRes = await api.post<{ question: { id: string } }>('/questions', {
           text: q.text || `Question ${i + 1}`,
           type: q.type,
-          options: q.options.filter((o) => o.trim() !== '').length >= 2 ? q.options : ['Option A', 'Option B', 'Option C', 'Option D'],
+          options:
+            q.options.filter((o) => o.trim() !== '').length >= 2
+              ? q.options
+              : ['Option A', 'Option B', 'Option C', 'Option D'],
           correctAnswer: q.correctAnswer || q.options[0] || 'Option A',
           explanation: q.explanation,
           topic: q.topic || category,
           difficulty: q.difficulty,
           timeLimit: q.timeLimit || timePerQuestion,
           points: q.points || 100,
+          imageUrl: q.imageUrl?.trim() ? q.imageUrl.trim() : undefined,
+          tableData,
           isParameterized: q.isParameterized,
           parameterTemplate: q.isParameterized ? q.parameterTemplate : undefined,
         });
@@ -138,7 +189,18 @@ export default function QuizBuilderPage() {
         joinMode: 'ONLINE_LIVE',
       });
 
-      setCreatedRoomCode(roomRes.room.code);
+      const code = roomRes.room.code;
+      setCreatedRoomCode(code);
+
+      try {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aptiquiz-phi.vercel.app';
+        const qr = await QRCode.toDataURL(`${origin}/join?code=${code}`, {
+          width: 260,
+          margin: 2,
+          color: { dark: '#0284c7', light: '#ffffff' },
+        });
+        setCreatedRoomQr(qr);
+      } catch {}
     } catch (err: any) {
       alert(err.message || 'Failed to create quiz');
     } finally {
@@ -157,17 +219,22 @@ export default function QuizBuilderPage() {
             <div className="card p-6 border-2 border-success-500 bg-success-50 dark:bg-success-900/20 text-center space-y-4">
               <span className="text-4xl block">🎉</span>
               <h2 className="text-2xl font-bold text-success-800 dark:text-success-200">
-                Quiz Created Successfully!
+                Quiz & Live Room Created Successfully!
               </h2>
               <p className="text-sm text-gray-700 dark:text-gray-300">
-                A live room has been generated with code{' '}
+                A live room has been generated with unique code{' '}
                 <span className="font-mono font-bold text-lg text-primary-600 bg-white dark:bg-gray-800 px-3 py-1 rounded-md border">
                   {createdRoomCode}
                 </span>
               </p>
+              {createdRoomQr && (
+                <div className="bg-white p-3 rounded-2xl inline-block shadow border">
+                  <img src={createdRoomQr} alt="Room QR Code" className="w-44 h-44 mx-auto" />
+                </div>
+              )}
               <div className="flex justify-center gap-4 pt-2">
                 <Link href={`/room/${createdRoomCode}/host`} className="btn-primary py-2.5 px-6">
-                  Open Host Lobby
+                  Open Host Lobby & QR Console
                 </Link>
                 <Link href="/dashboard" className="btn-secondary py-2.5 px-4">
                   Go to Dashboard
@@ -179,10 +246,10 @@ export default function QuizBuilderPage() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-                Quiz Builder & Question Editor
+                Quiz Builder & Question Authoring Studio
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Author customized multiple-choice tests, set timer limits, and configure negative marking.
+                Create, edit, reorder, and reuse question sets with topics, difficulties, optional images, and data interpretation tables.
               </p>
             </div>
           </div>
@@ -191,7 +258,7 @@ export default function QuizBuilderPage() {
             {/* Quiz General Settings Card */}
             <div className="card p-6 sm:p-8 space-y-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-3">
-                1. Quiz Settings
+                1. Quiz Set Configuration
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="sm:col-span-2">
@@ -207,7 +274,7 @@ export default function QuizBuilderPage() {
                 </div>
 
                 <div>
-                  <label className="label">Category</label>
+                  <label className="label">Primary Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
@@ -217,12 +284,12 @@ export default function QuizBuilderPage() {
                     <option value="Logical Reasoning">Logical Reasoning</option>
                     <option value="Verbal Ability">Verbal Ability</option>
                     <option value="Data Interpretation">Data Interpretation</option>
-                    <option value="Core Engineering / CS">Core Engineering / CS</option>
+                    <option value="Non-Verbal Reasoning">Non-Verbal Reasoning</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="label">Difficulty</label>
+                  <label className="label">Default Difficulty</label>
                   <select
                     value={difficulty}
                     onChange={(e) => setDifficulty(e.target.value as any)}
@@ -235,7 +302,7 @@ export default function QuizBuilderPage() {
                 </div>
 
                 <div>
-                  <label className="label">Time per Question (seconds)</label>
+                  <label className="label">Default Time per Question (s)</label>
                   <input
                     type="number"
                     min={10}
@@ -264,7 +331,7 @@ export default function QuizBuilderPage() {
                     rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Optional tips, topics covered, or instructions for participants..."
+                    placeholder="Optional tips, formulas covered, or instructions for participants..."
                     className="input"
                   />
                 </div>
@@ -273,14 +340,14 @@ export default function QuizBuilderPage() {
 
             {/* Questions Editor */}
             <div className="card p-6 sm:p-8 space-y-6">
-              <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 pb-3">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  2. Questions ({questions.length})
+                  2. Question Authoring & Reordering ({questions.length} Questions)
                 </h2>
                 <button
                   type="button"
                   onClick={addQuestion}
-                  className="btn-primary text-sm py-1.5 px-3"
+                  className="btn-primary text-sm py-2 px-4"
                 >
                   + Add Question
                 </button>
@@ -299,7 +366,7 @@ export default function QuizBuilderPage() {
                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200'
                     }`}
                   >
-                    Q{idx + 1}
+                    Q{idx + 1}: {q.topic?.slice(0, 12) || 'Question'}
                   </button>
                 ))}
               </div>
@@ -307,19 +374,88 @@ export default function QuizBuilderPage() {
               {/* Active Question Form */}
               {currentQ && (
                 <div className="space-y-6 pt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-gray-500 uppercase">
-                      Editing Question {activeTab + 1}
+                  {/* Reorder / Duplicate / Delete Toolbar */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
+                    <span className="text-xs font-extrabold text-primary-600 dark:text-primary-400 uppercase tracking-wider">
+                      Editing Question #{activeTab + 1} of {questions.length}
                     </span>
-                    {questions.length > 1 && (
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => removeQuestion(activeTab)}
-                        className="text-xs text-danger-500 hover:underline"
+                        onClick={() => moveQuestion(activeTab, -1)}
+                        disabled={activeTab === 0}
+                        className="btn-secondary text-xs py-1 px-2.5 disabled:opacity-40"
+                        title="Move question earlier"
                       >
-                        Delete Question
+                        ↑ Move Up
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => moveQuestion(activeTab, 1)}
+                        disabled={activeTab === questions.length - 1}
+                        className="btn-secondary text-xs py-1 px-2.5 disabled:opacity-40"
+                        title="Move question later"
+                      >
+                        ↓ Move Down
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => duplicateQuestion(activeTab)}
+                        className="btn-secondary text-xs py-1 px-2.5"
+                      >
+                        📋 Duplicate Q
+                      </button>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeQuestion(activeTab)}
+                          className="text-xs font-bold text-danger-600 hover:underline px-2"
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Per-Question Topic, Difficulty, Time Limit */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="label">Question Topic *</label>
+                      <input
+                        type="text"
+                        value={currentQ.topic}
+                        onChange={(e) => updateQuestion(activeTab, { topic: e.target.value })}
+                        placeholder="e.g., Time & Work, Syllogism, Data Interpretation"
+                        className="input"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Question Difficulty</label>
+                      <select
+                        value={currentQ.difficulty}
+                        onChange={(e) =>
+                          updateQuestion(activeTab, { difficulty: e.target.value as any })
+                        }
+                        className="input"
+                      >
+                        <option value="EASY">Easy (100 base pts)</option>
+                        <option value="MEDIUM">Medium (150 base pts)</option>
+                        <option value="HARD">Hard (200 base pts)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Time Limit (seconds)</label>
+                      <input
+                        type="number"
+                        min={10}
+                        max={300}
+                        value={currentQ.timeLimit}
+                        onChange={(e) =>
+                          updateQuestion(activeTab, { timeLimit: parseInt(e.target.value) || 60 })
+                        }
+                        className="input"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -332,6 +468,30 @@ export default function QuizBuilderPage() {
                       className="input"
                       required
                     />
+                  </div>
+
+                  {/* Optional Image URL & Data Interpretation Table CSV */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">Optional Image / Diagram URL</label>
+                      <input
+                        type="url"
+                        value={currentQ.imageUrl || ''}
+                        onChange={(e) => updateQuestion(activeTab, { imageUrl: e.target.value })}
+                        placeholder="https://example.com/diagram.png (optional)"
+                        className="input text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Optional Data Table (CSV rows: Header1,Header2)</label>
+                      <textarea
+                        rows={2}
+                        value={currentQ.tableCsv || ''}
+                        onChange={(e) => updateQuestion(activeTab, { tableCsv: e.target.value })}
+                        placeholder={'Year,Sales,Profit\n2024,120,30\n2025,150,45'}
+                        className="input text-xs font-mono"
+                      />
+                    </div>
                   </div>
 
                   {/* Parameterized option checkbox */}
@@ -363,7 +523,7 @@ export default function QuizBuilderPage() {
 
                   {/* 4 Multiple Choice Options */}
                   <div className="space-y-3">
-                    <label className="label">Options (Mark the correct answer button)</label>
+                    <label className="label">Options (Click letter A/B/C/D to mark the Correct Answer)</label>
                     {currentQ.options.map((opt, optIdx) => (
                       <div key={optIdx} className="flex items-center gap-3">
                         <button
@@ -403,12 +563,12 @@ export default function QuizBuilderPage() {
 
                   {/* Explanation */}
                   <div>
-                    <label className="label">Explanation & Solution Step</label>
+                    <label className="label">Step-by-Step Solution & Formula Explanation</label>
                     <textarea
-                      rows={2}
+                      rows={3}
                       value={currentQ.explanation}
                       onChange={(e) => updateQuestion(activeTab, { explanation: e.target.value })}
-                      placeholder="Explain how to solve this question for the round result screen..."
+                      placeholder="Explain the shortcut formula and step-by-step calculation for the round result screen..."
                       className="input"
                     />
                   </div>
@@ -425,7 +585,7 @@ export default function QuizBuilderPage() {
                 disabled={isSubmitting}
                 className="btn-primary py-3 px-8 text-base font-semibold shadow-md"
               >
-                {isSubmitting ? 'Saving Quiz & Generating Room...' : 'Save Quiz & Create Room'}
+                {isSubmitting ? 'Saving Quiz & Generating Room QR...' : 'Save Quiz & Generate Live Room'}
               </button>
             </div>
           </form>

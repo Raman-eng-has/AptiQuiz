@@ -98,6 +98,18 @@ router.get('/:id', asyncHandler((async (req, res) => {
   res.json({ quiz });
 })));
 
+router.get('/:id/qr', asyncHandler((async (req, res) => {
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, title: true, category: true, difficulty: true },
+  });
+  if (!quiz) throw new AppError(404, 'Quiz not found');
+  const QRCode = (await import('qrcode')).default;
+  const quizUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/quiz/${quiz.id}`;
+  const qrDataUrl = await QRCode.toDataURL(quizUrl, { width: 400, margin: 2 });
+  res.json({ qrCode: qrDataUrl, quizId: quiz.id, title: quiz.title, quizUrl });
+})));
+
 router.post('/', requireRole(UserRole.HOST, UserRole.COLLEGE_ADMIN, UserRole.SUPER_ADMIN), asyncHandler((async (req: AuthRequest, res) => {
   const data = createQuizSchema.parse(req.body);
   const quiz = await prisma.quiz.create({

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { api } from '@/lib/api';
 import { useAuthStore, isHostOrAdmin } from '@/lib/auth';
 import Navbar from '@/components/Navbar';
@@ -33,6 +34,30 @@ export default function ExploreQuizzesPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [wakeNotice, setWakeNotice] = useState(false);
+
+  // Unique QR Modal state
+  const [qrModalQuiz, setQrModalQuiz] = useState<QuizItem | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [qrUrlText, setQrUrlText] = useState<string>('');
+  const [copiedQrLink, setCopiedQrLink] = useState(false);
+
+  const handleOpenQuizQr = async (quiz: QuizItem) => {
+    setQrModalQuiz(quiz);
+    setCopiedQrLink(false);
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aptiquiz-phi.vercel.app';
+    const url = `${origin}/quiz/${quiz.id}`;
+    setQrUrlText(url);
+    try {
+      const dataUrl = await QRCode.toDataURL(url, {
+        width: 320,
+        margin: 2,
+        color: { dark: '#0284c7', light: '#ffffff' },
+      });
+      setQrDataUrl(dataUrl);
+    } catch (err) {
+      console.error('QR generation failed', err);
+    }
+  };
 
   const fetchQuizzes = async () => {
     setIsLoading(true);
@@ -238,27 +263,43 @@ export default function ExploreQuizzesPage() {
                     {quiz.description || 'Comprehensive test questions covering fundamentals and timed practice.'}
                   </p>
 
-                  <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
-                    <span>📝 {quiz._count?.questions ?? 0} Questions</span>
-                    <span>⏱️ {quiz.timePerQuestion || 60}s / Q</span>
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-3">
+                      <span>📝 {quiz._count?.questions ?? 0} Questions</span>
+                      <span>⏱️ {quiz.timePerQuestion || 60}s / Q</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenQuizQr(quiz)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 hover:bg-sky-100 dark:hover:bg-sky-900 font-bold transition"
+                      title="Show unique QR code for this quiz"
+                    >
+                      📱 QR Code
+                    </button>
                   </div>
                 </div>
 
-                <div className="pt-5 mt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-3">
+                <div className="pt-5 mt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                  <Link
+                    href={`/quiz/${quiz.id}`}
+                    className="btn-primary w-full text-xs sm:text-sm py-2.5 text-center flex items-center justify-center gap-1.5"
+                  >
+                    🎯 Practice & Solutions
+                  </Link>
                   {isHost ? (
                     <button
                       onClick={() => handleCreateRoom(quiz.id)}
                       disabled={creatingRoomQuizId === quiz.id}
-                      className="btn-primary w-full text-sm py-2 flex items-center justify-center gap-2"
+                      className="btn-secondary w-full text-xs sm:text-sm py-2.5 flex items-center justify-center gap-1.5"
                     >
-                      {creatingRoomQuizId === quiz.id ? 'Creating Room...' : 'Host Room'}
+                      {creatingRoomQuizId === quiz.id ? 'Creating...' : '📡 Host Live'}
                     </button>
                   ) : (
                     <Link
                       href={`/join`}
-                      className="btn-primary w-full text-sm py-2 text-center"
+                      className="btn-secondary w-full text-xs sm:text-sm py-2.5 text-center"
                     >
-                      Join Room to Play
+                      🔑 Join Live Room
                     </Link>
                   )}
                 </div>
@@ -267,6 +308,106 @@ export default function ExploreQuizzesPage() {
           </div>
         )}
       </main>
+
+      {/* Unique Quiz QR Code Modal */}
+      {qrModalQuiz && (
+        <div
+          className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setQrModalQuiz(null)}
+        >
+          <div
+            className="card max-w-md w-full p-6 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+              <span className="badge-primary text-xs">Unique Quiz QR</span>
+              <button
+                onClick={() => setQrModalQuiz(null)}
+                className="text-xs font-bold text-gray-500 hover:text-gray-900 dark:hover:text-white"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
+                {qrModalQuiz.title}
+              </h3>
+              <p className="text-xs text-gray-500 font-mono">
+                Quiz ID: {qrModalQuiz.id}
+              </p>
+            </div>
+
+            {qrDataUrl ? (
+              <div className="bg-white p-4 rounded-2xl inline-block shadow-md border border-gray-200">
+                <img
+                  src={qrDataUrl}
+                  alt={`QR Code for ${qrModalQuiz.title}`}
+                  className="w-56 h-56 mx-auto"
+                />
+              </div>
+            ) : (
+              <div className="w-56 h-56 mx-auto bg-gray-100 dark:bg-gray-800 rounded-2xl animate-pulse flex items-center justify-center text-xs text-gray-400">
+                Generating QR...
+              </div>
+            )}
+
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Scan this unique QR code with any phone camera to open this quiz directly, or host a live multiplayer room with its own locked-entry room QR.
+            </p>
+
+            <div className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-900 text-xs font-mono text-gray-700 dark:text-gray-300 break-all">
+              {qrUrlText}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(qrUrlText);
+                  setCopiedQrLink(true);
+                  setTimeout(() => setCopiedQrLink(false), 2000);
+                }}
+                className="btn-secondary py-2 px-3 text-xs"
+              >
+                {copiedQrLink ? '✓ Link Copied!' : '📋 Copy Quiz Link'}
+              </button>
+              {qrDataUrl && (
+                <a
+                  href={qrDataUrl}
+                  download={`aptiquiz-${qrModalQuiz.id.slice(0, 8)}-qr.png`}
+                  className="btn-secondary py-2 px-3 text-xs flex items-center justify-center"
+                >
+                  ⬇️ Download QR PNG
+                </a>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-gray-100 dark:border-gray-800 flex gap-2.5">
+              <Link
+                href={`/quiz/${qrModalQuiz.id}`}
+                className="btn-primary flex-1 py-2.5 text-xs text-center"
+              >
+                🎯 Open Quiz
+              </Link>
+              {isHost && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = qrModalQuiz.id;
+                    setQrModalQuiz(null);
+                    handleCreateRoom(id);
+                  }}
+                  className="btn-secondary flex-1 py-2.5 text-xs"
+                >
+                  📡 Host Live Room
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
